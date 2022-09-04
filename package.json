@@ -2,8 +2,11 @@
   "name": "wyvern-dao-ui",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
+    "start:build": "tsc --build",
+    "start:run": "node build/index.js",
+    "start": "npm run start:build && npm run start:run",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/hjorthjort/wyvern-dao-ui/issues"
   },
-  "homepage": "https://github.com/hjorthjort/wyvern-dao-ui#readme"
+  "homepage": "https://github.com/hjorthjort/wyvern-dao-ui#readme",
+  "devDependencies": {
+    "typescript": "^4.8.2"
+  }
 }
