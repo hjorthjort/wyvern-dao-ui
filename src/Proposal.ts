@@ -19,12 +19,11 @@ class Proposal {
     public finalized : boolean;
     public proposalPassed : boolean;
     public numberOfVotes : BigNumber;
-    public proposalHash : BigNumber;
-//  public votes : Vote[] ;
-//  public voted : (address : string) => boolean;
-    
+    public proposalHash : string;
+    public votesCount : {yea : BigNumber, nay : BigNumber} | undefined = undefined;   
+
     constructor([recipient, amount, metadataHash, timeCreated, votingDeadline, finalized, proposalPassed, numberOfVotes, proposalHash] :
-        [string, BigNumber, string, BigNumber, BigNumber, boolean, boolean, BigNumber, BigNumber]) {
+        [string, BigNumber, string, BigNumber, BigNumber, boolean, boolean, BigNumber, string]) {
         this.recipient = recipient;
         this.amount = amount;
         this.metadataHash = metadataHash;
@@ -34,6 +33,10 @@ class Proposal {
         this.proposalPassed = proposalPassed;
         this.numberOfVotes = numberOfVotes;
         this.proposalHash = proposalHash;
+    }
+
+    public addVoteCount({yea, nay} : {yea: BigNumber, nay: BigNumber}) {
+        this.votesCount = { yea: yea, nay: nay};
     }
 }
 
