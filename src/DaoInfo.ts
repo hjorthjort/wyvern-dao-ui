@@ -21,23 +21,40 @@ const ethBalance = async () => provider.getBalance(await WyvernDaoTreasuryAddres
 const daiBalance = async () => await dai.contract.balanceOf(WyvernDaoTreasuryAddress);
 const wyvBalance = async () => await wyv.contract.balanceOf(dao.address);
 
+// Votes
+
+const allVotes = async () => {
+    return await dao.contract.queryFilter(dao.contract.filters.Voted());
+}
+
 // Proposals
 const debatePeriodInMinutes : Promise<number> = dao.contract.debatingPeriodInMinutes().then((x : BigNumber) => x.toNumber());
 
 const proposals = async () => {
+    const votesP = allVotes(); // May be slow.
     const numProposals = (await dao.contract.numProposals()).toNumber();
     const idxs = [...Array(numProposals).keys()];
     const proposalsP : Promise<any>[] = idxs.map((i) => dao.contract.proposals(i));
-    const votes = await Promise.all(idxs.map((i) => dao.contract.countVotes(i)));
-    const proposals = (await Promise.all(proposalsP)).map((props) => new Proposal(props));
-    proposals.forEach((p, i) => p.addVoteCount(votes[i]));
+    const voteCounts = await Promise.all(idxs.map((i) => dao.contract.countVotes(i)));
+    const proposals = (await Promise.all(proposalsP)).map((props, idx) => new Proposal(idx, props));
+    proposals.forEach((p, i) => p.addVoteCount(voteCounts[i]));
+    const votes = await votesP;
+    votes.forEach((event) => {
+        const propIdx = event.args!.proposalID.toNumber();
+        const position = event.args!.position;
+        const voter = event.args!.voter;
+        proposals[propIdx].registerVote(propIdx, position, voter);
+    })
     return proposals;
 }
+
 
 // Formatting
 const displayBig = (x : BigNumber | undefined, decimals = 18) => commify(formatUnits(x ? x : 0, decimals));
 
 let props : Proposal[];
+let votes : providers.Log[]
+
 class DaoInfo {
     public data = {
         treasury : {},
@@ -47,6 +64,7 @@ class DaoInfo {
             minimumQuorum: BigNumber.from(0),
             requiredToBeBoardMember: "",
             debatePeriodInDays: 0,
+            votes: votes,
         }
     };
 
@@ -62,24 +80,34 @@ class DaoInfo {
                 minimumQuorum: await dao.contract.minimumQuorum(), // In WYV tokens, 18 decimals.
                 requiredToBeBoardMember: displayBig(await dao.contract.requiredSharesToBeBoardMember()),
                 debatePeriodInDays: (await debatePeriodInMinutes) / (60 * 24),
+                votes: await allVotes(),
             },
         }
     }
 
-    public async proposalStatus(idx: number, transactionCalldata? : string) {
-        const p = this.data?.dao?.proposals[idx];
-        console.log(p);
+    public openProposals() {
+        return this.data.dao?.proposals.filter((p) => !p.finalized);
+    }
+
+    public proposalStatus(prop: number | Proposal, transactionCalldata? : string) {
+        let p : Proposal;
+        if (typeof prop === 'number') {
+            p = this.data!.dao!.proposals[prop];
+        } else {
+            p = prop;
+        }
         const yea = p.votesCount?.yea;
         const nay = p.votesCount?.nay;
         const deadline = p.votingDeadline;
-        //const currentTime = (await provider.getBlock("latest")).timestamp;
-        const currentQuorum = yea ? yea.add(nay ? nay : 0) : BigNumber.from(0);
+        const currentQuorum = yea!.add(nay!);
         let status = {
             percentOfQuorum: displayBig(currentQuorum.mul(1000).div(this.data.dao.minimumQuorum), 1),
             remainingToQuorum: displayBig(this.data.dao.minimumQuorum.sub(currentQuorum)),
             deadline: new Date(deadline.toNumber() * 1000),
             calldata: "",
             calldataChecksOut: undefined as boolean | undefined,
+            votes: p.votes,
+            proposal: p
         }
 
         if (transactionCalldata) {

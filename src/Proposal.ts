@@ -11,6 +11,7 @@ class Vote {
 
 class Proposal {
 
+    public idx: number;
     public recipient : string;
     public amount : BigNumber;
     public metadataHash : string;
@@ -21,9 +22,11 @@ class Proposal {
     public numberOfVotes : BigNumber;
     public proposalHash : string;
     public votesCount : {yea : BigNumber, nay : BigNumber} | undefined = undefined;   
+    public votes : Vote[];
 
-    constructor([recipient, amount, metadataHash, timeCreated, votingDeadline, finalized, proposalPassed, numberOfVotes, proposalHash] :
+    constructor(idx : number, [recipient, amount, metadataHash, timeCreated, votingDeadline, finalized, proposalPassed, numberOfVotes, proposalHash]:
         [string, BigNumber, string, BigNumber, BigNumber, boolean, boolean, BigNumber, string]) {
+        this.idx = idx;
         this.recipient = recipient;
         this.amount = amount;
         this.metadataHash = metadataHash;
@@ -33,11 +36,21 @@ class Proposal {
         this.proposalPassed = proposalPassed;
         this.numberOfVotes = numberOfVotes;
         this.proposalHash = proposalHash;
+        this.votes = [];
     }
 
-    public addVoteCount({yea, nay} : {yea: BigNumber, nay: BigNumber}) {
-        this.votesCount = { yea: yea, nay: nay};
+    public addVoteCount({ yea, nay }: { yea: BigNumber, nay: BigNumber }) {
+        this.votesCount = { yea: yea, nay: nay };
     }
+
+    public registerVote(proposalID : number, position: boolean, voter : string) {
+        if (proposalID == this.idx) {
+            this.votes.push(new Vote(voter, position))
+        } else {
+            throw Error("Wrong proposal");
+        }
+    }
+
 }
 
 export default Proposal;
