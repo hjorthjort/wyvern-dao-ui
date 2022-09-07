@@ -89,7 +89,11 @@ class DaoInfo {
         return this.data.dao?.proposals.filter((p) => !p.finalized);
     }
 
-    public proposalStatus(prop: number | Proposal, transactionCalldata? : string) {
+    public async proposalStatus(prop: number | Proposal, transactionCalldata? : string) {
+        async function addressLookup(address : string) {
+            const ensName = await provider.lookupAddress(address);
+            return ensName === null ? address : ensName;
+        }
         let p : Proposal;
         if (typeof prop === 'number') {
             p = this.data!.dao!.proposals[prop];
@@ -106,7 +110,8 @@ class DaoInfo {
             deadline: new Date(deadline.toNumber() * 1000),
             calldata: "",
             calldataChecksOut: undefined as boolean | undefined,
-            votes: p.votes,
+            votesFor: (await Promise.all(p.votes.filter((v) => v.inSupport).map((v : {voter: string, inSupport : boolean}) => addressLookup(v.voter)))).sort(),
+            votesAgainst: (await Promise.all(p.votes.filter((v) => !v.inSupport).map((v : {voter: string, inSupport : boolean}) => addressLookup(v.voter)))).sort(),
             proposal: p
         }
 
