@@ -97,15 +97,19 @@ class DaoInfo {
         let p : Proposal;
         if (typeof prop === 'number') {
             p = this.data!.dao!.proposals[prop];
+            if (!p) {
+                process.stderr.write('Proposal ' + prop + ' does not exist (is your node up to date?)');
+                return ;
+            }
         } else {
             p = prop;
         }
-        const yea = p.votesCount?.yea;
-        const nay = p.votesCount?.nay;
+        const yea = p.votesCount!.yea;
+        const nay = p.votesCount!.nay;
         const deadline = p.votingDeadline;
         const currentQuorum = yea!.add(nay!);
         let status = {
-            percentOfQuorum: displayBig(currentQuorum.mul(1000).div(this.data.dao.minimumQuorum), 1),
+            percentOfQuorum: displayBig(currentQuorum.mul(1000).div(this.data.dao.minimumQuorum), 1) + '%',
             remainingToQuorum: displayBig(this.data.dao.minimumQuorum.sub(currentQuorum)),
             deadline: new Date(deadline.toNumber() * 1000),
             calldata: "",
