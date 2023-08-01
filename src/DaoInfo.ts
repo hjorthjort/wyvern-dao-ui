@@ -5,7 +5,8 @@ import Proposal from "./Proposal";
 import WyvernDao from "./WyvernDao";
 const {formatUnits , commify} = utils;
 
-const provider : providers.Provider = new providers.JsonRpcProvider(); // localhost:8545
+// const provider : providers.Provider = new providers.JsonRpcProvider(); // localhost:8545
+const provider : providers.Provider = new providers.InfuraProvider();
 
 // Addresses
 const WyvernDaoTreasuryAddress = "0xa839D4b5A36265795EbA6894651a8aF3d0aE2e68";
